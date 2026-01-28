@@ -1,0 +1,77 @@
+[project]
+name = "opensymbolicai-examples"
+version = "0.1.0"
+description = "OpenSymbolicAI Examples"
+readme = "README.md"
+license = "MIT"
+authors = [
+    {name = "OpenSymbolicAI"}
+]
+requires-python = ">=3.12"
+dependencies = [
+    "opensymbolicai-core>=0.1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/OpenSymbolicAI/examples-py"
+Repository = "https://github.com/OpenSymbolicAI/examples-py"
+
+[tool.uv.workspace]
+members = ["examples/*"]
+
+[tool.uv.sources]
+opensymbolicai-core = { git = "https://github.com/OpenSymbolicAI/core-py" }
+
+[dependency-groups]
+dev = [
+    "mypy>=1.0",
+    "pre-commit>=4.5.1",
+    "pytest>=8.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.9",
+]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "F",      # pyflakes
+    "I",      # isort
+    "N",      # pep8-naming
+    "W",      # pycodestyle warnings
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "SIM",    # flake8-simplify
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["opensymbolicai"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = false
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["examples/*/tests"]
+addopts = "-v --tb=short"
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
