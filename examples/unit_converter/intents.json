@@ -1,0 +1,95 @@
+{
+  "metadata": {
+    "name": "Volume Converter Benchmark",
+    "version": "1.0.0",
+    "description": "Cooking/volume conversion intents for benchmarking LLM accuracy",
+    "total_intents": 10
+  },
+  "intents": [
+    {
+      "id": 1,
+      "category": "simple",
+      "intent": "Convert 6 teaspoons to tablespoons",
+      "expected": 2.0,
+      "tolerance": 0.01,
+      "steps": 1
+    },
+    {
+      "id": 2,
+      "category": "simple",
+      "intent": "Convert 2 cups to tablespoons",
+      "expected": 32.0,
+      "tolerance": 0.01,
+      "steps": 1
+    },
+    {
+      "id": 3,
+      "category": "simple",
+      "intent": "Convert 4 pints to cups",
+      "expected": 8.0,
+      "tolerance": 0.01,
+      "steps": 1
+    },
+    {
+      "id": 4,
+      "category": "simple",
+      "intent": "Convert 8 quarts to gallons",
+      "expected": 2.0,
+      "tolerance": 0.01,
+      "steps": 1
+    },
+    {
+      "id": 5,
+      "category": "simple",
+      "intent": "Convert 500 ml to liters",
+      "expected": 0.5,
+      "tolerance": 0.01,
+      "steps": 1
+    },
+    {
+      "id": 6,
+      "category": "complex",
+      "intent": "Convert 48 teaspoons to cups",
+      "expected": 1.0,
+      "tolerance": 0.01,
+      "steps": 2,
+      "note": "tsp -> tbsp -> cups"
+    },
+    {
+      "id": 7,
+      "category": "complex",
+      "intent": "Convert 2 gallons to cups",
+      "expected": 32.0,
+      "tolerance": 0.01,
+      "steps": 3,
+      "note": "gallons -> quarts -> pints -> cups"
+    },
+    {
+      "id": 8,
+      "category": "complex",
+      "intent": "Convert 3 cups to liters",
+      "expected": 0.709764,
+      "tolerance": 0.001,
+      "steps": 2,
+      "note": "cups -> ml -> liters"
+    },
+    {
+      "id": 9,
+      "category": "complex",
+      "intent": "Convert 1 gallon to pints",
+      "expected": 8.0,
+      "tolerance": 0.01,
+      "steps": 2,
+      "note": "gallons -> quarts -> pints"
+    },
+    {
+      "id": 10,
+      "category": "complex",
+      "intent": "Convert 96 teaspoons to pints",
+      "expected": 1.0,
+      "tolerance": 0.01,
+      "steps": 3,
+      "note": "tsp -> tbsp -> cups -> pints"
+    }
+  ]
+}
