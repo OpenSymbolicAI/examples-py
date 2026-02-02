@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from typing import Any
 
 from opensymbolicai.blueprints import PlanExecute
@@ -10,6 +11,25 @@ from opensymbolicai.llm import LLM, LLMConfig, create_llm
 
 from rag_agent.models import Document, ValidationResult
 from rag_agent.retriever import ChromaRetriever
+
+
+@dataclass
+class ExecutionMetrics:
+    """Track LLM usage during plan execution (primitives that call LLM)."""
+
+    llm_calls: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
+
+    @property
+    def total_tokens(self) -> int:
+        return self.input_tokens + self.output_tokens
+
+    def reset(self) -> None:
+        """Reset all metrics to zero."""
+        self.llm_calls = 0
+        self.input_tokens = 0
+        self.output_tokens = 0
 
 
 class RAGAgent(PlanExecute):
@@ -66,10 +86,27 @@ class RAGAgent(PlanExecute):
         else:
             self._generator = generator_llm
 
+        # Track execution-phase LLM usage (primitives that call LLM)
+        self.execution_metrics = ExecutionMetrics()
+
     def _llm_generate(self, prompt: str) -> str:
-        """Generate text using the generator LLM."""
+        """Generate text using the generator LLM and track usage."""
         response = self._generator.generate(prompt)
+
+        # Track execution metrics
+        self.execution_metrics.llm_calls += 1
+        if hasattr(response, "usage") and response.usage:
+            self.execution_metrics.input_tokens += getattr(response.usage, "input_tokens", 0)
+            self.execution_metrics.output_tokens += getattr(response.usage, "output_tokens", 0)
+
         return response.text.strip()
+
+    def run(self, query: str) -> Any:
+        """Run the agent with query, tracking both planning and execution metrics."""
+        # Reset execution metrics for this run
+        self.execution_metrics.reset()
+        # Call parent's run method
+        return super().run(query)
 
     # =========================================================================
     # RETRIEVAL PRIMITIVES

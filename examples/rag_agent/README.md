@@ -1,10 +1,12 @@
 # RAG Agent with Behavior-Based Decomposition
 
-This example demonstrates how to build an adaptive RAG (Retrieval-Augmented Generation) agent using OpenSymbolicAI's behavior-based decomposition pattern.
+This example demonstrates how to build an adaptive RAG (Retrieval-Augmented Generation) agent using OpenSymbolicAI's behavior-based decomposition pattern. It also includes an **illustration comparing behaviour programming vs tool-calling** to show why [LLM attention is precious](https://opensymbolicai.com/blog/llm-attention-is-precious).
 
 ## Key Concept
 
 The agent uses **decomposition behaviors** to teach the LLM different retrieval strategies. When you ask a question, the agent automatically selects the appropriate strategy based on query similarity to the examples.
+
+**Why this matters:** Traditional tool-calling agents make the LLM re-read all previous tool results on every call, wasting tokens exponentially. Behaviour programming plans once, then executes in Python.
 
 ### Strategies Learned via Decomposition
 
@@ -43,8 +45,11 @@ uv run python setup_data.py --topics "Quantum computing" "Climate change" "CRISP
 ### 3. Run the Agent
 
 ```bash
-# Interactive mode
+# Interactive mode (behaviour programming - default)
 uv run python -m rag_agent.main
+
+# Tool-calling mode (for comparison)
+uv run python -m rag_agent.main --mode tool-call
 
 # Demo showcasing different strategies
 uv run python -m rag_agent.main --demo
@@ -52,6 +57,65 @@ uv run python -m rag_agent.main --demo
 # Single query
 uv run python -m rag_agent.main --query "What is machine learning?"
 ```
+
+## Behaviour Programming vs Tool-Calling Illustration
+
+This example includes both approaches so you can measure the difference:
+
+```bash
+# Run the comparison illustration
+uv run python illustration.py
+
+# With custom model
+uv run python illustration.py --model openai/gpt-oss-20b --provider groq
+```
+
+### Why LLM Attention is Precious
+
+With **tool calling**, every step goes through the LLM. Each call includes all previous results:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  CALL 1: "Get ML docs"         →  3,010 tokens read    │
+│  CALL 2: "Get DL docs"         →  5,610 tokens read    │  ← re-reads ML docs
+│  CALL 3: "Combine contexts"    →  8,210 tokens read    │  ← re-reads both
+│  CALL 4: "Compare them"        →  9,810 tokens read    │  ← re-reads all
+│  CALL 5: "Format answer"       → 10,410 tokens read    │
+└─────────────────────────────────────────────────────────┘
+                    TOTAL: ~37,000 tokens
+```
+
+With **behaviour programming**, the LLM plans once, then Python executes:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  PLANNING CALL                 →  1,010 tokens read    │
+│  (LLM outputs the plan)                                 │
+└─────────────────────────────────────────────────────────┘
+                    ↓ Python executes plan
+┌─────────────────────────────────────────────────────────┐
+│  COMPARE PRIMITIVE             →  3,100 tokens read    │
+│  (Only when LLM actually needs to compare)              │
+└─────────────────────────────────────────────────────────┘
+                    TOTAL: ~5,000 tokens
+```
+
+### Illustration Results
+
+| Metric | Behaviour | Tool-Calling |
+|--------|-----------|--------------|
+| LLM Calls | 2 | 5 |
+| Tokens Processed | ~5,000 | ~37,000 |
+| **Savings** | | **~7x fewer tokens** |
+
+The gap grows with:
+- **More steps** = more re-reading in tool calling
+- **Bigger documents** = more wasted tokens per re-read
+- **Multiple agents** = each agent re-reads everything
+
+> **Send logic to the LLM. Keep data in Python.**
+
+Learn more: [Behaviour Programming vs Tool-Calling](https://opensymbolicai.com/blog/behaviour-programming-vs-tool-calling)
 
 ## Example Session
 
@@ -156,9 +220,34 @@ retriever.add_documents(
 )
 ```
 
-### Use Different LLM Providers
+### LLM Providers and Models
+
+To run this example, you need one of the following:
+
+1. **Ollama (Local)** - Default option, no API key required
+2. **Cloud Provider** - OpenAI, Anthropic, Groq, or Fireworks with API key
+3. **Custom LLM** - Implement your own LLM class
+
+#### Supported Providers
+
+| Provider | Env Variable |
+|----------|--------------|
+| `ollama` | None (local) |
+| `openai` | `OPENAI_API_KEY` |
+| `anthropic` | `ANTHROPIC_API_KEY` |
+| `groq` | `GROQ_API_KEY` |
+| `fireworks` | `FIREWORKS_API_KEY` |
+
+#### Usage Examples
 
 ```bash
+# Local Ollama (default - no API key needed)
+uv run python -m rag_agent.main --model gpt-oss:20b
+
+# Groq
+export GROQ_API_KEY=your-key
+uv run python -m rag_agent.main --provider groq --model openai/gpt-oss-20b
+
 # OpenAI
 export OPENAI_API_KEY=your-key
 uv run python -m rag_agent.main --provider openai --model gpt-4
@@ -166,9 +255,23 @@ uv run python -m rag_agent.main --provider openai --model gpt-4
 # Anthropic
 export ANTHROPIC_API_KEY=your-key
 uv run python -m rag_agent.main --provider anthropic --model claude-3-sonnet-20240229
+```
 
-# Local Ollama (default)
-uv run python -m rag_agent.main --model gpt-oss:20b
+#### Custom LLM Implementation
+
+You can implement your own LLM class by extending the base `LLM` interface:
+
+```python
+from opensymbolicai.llm import LLM, LLMResponse
+
+class MyCustomLLM(LLM):
+    def generate(self, prompt: str, **kwargs) -> LLMResponse:
+        # Your implementation here
+        response_text = call_your_model(prompt)
+        return LLMResponse(content=response_text)
+
+# Use with the agent
+agent = RAGAgent(llm=MyCustomLLM(), retriever=retriever)
 ```
 
 ### Add Custom Decomposition Behaviors
@@ -198,12 +301,19 @@ class MyRAGAgent(RAGAgent):
 examples/rag_agent/
 ├── pyproject.toml           # Dependencies
 ├── setup_data.py            # Data loading script
+├── illustration.py          # Behaviour vs Tool-Calling comparison
 ├── README.md                # This file
 └── rag_agent/
     ├── __init__.py
     ├── agent.py             # RAGAgent with decomposition behaviors
-    ├── main.py              # CLI entry point
+    ├── tool_call_agent.py   # ToolCallRAGAgent for comparison
+    ├── main.py              # CLI entry point (supports --mode)
     ├── models.py            # Document, ValidationResult
     ├── retriever.py         # ChromaDB wrapper
     └── wikipedia_loader.py  # Wikipedia ingestion
 ```
+
+## Related Reading
+
+- [LLM Attention Is Precious: Why Tool Calling Wastes It](https://opensymbolicai.com/blog/llm-attention-is-precious)
+- [Behaviour Programming vs Tool-Calling](https://opensymbolicai.com/blog/behaviour-programming-vs-tool-calling)
