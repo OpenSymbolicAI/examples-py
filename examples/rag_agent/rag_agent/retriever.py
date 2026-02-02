@@ -49,11 +49,9 @@ class ChromaRetriever:
         self.persist_directory = Path(persist_directory)
         self.persist_directory.mkdir(parents=True, exist_ok=True)
 
-        self.client = chromadb.Client(
-            Settings(
-                persist_directory=str(self.persist_directory),
-                anonymized_telemetry=False,
-            )
+        self.client = chromadb.PersistentClient(
+            path=str(self.persist_directory),
+            settings=Settings(anonymized_telemetry=False),
         )
 
         self.collection = self.client.get_or_create_collection(

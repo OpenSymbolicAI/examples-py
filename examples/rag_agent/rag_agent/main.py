@@ -13,6 +13,7 @@ load_dotenv()
 
 from rag_agent.agent import RAGAgent
 from rag_agent.retriever import ChromaRetriever
+from rag_agent.tool_call_agent import ToolCallRAGAgent
 from rag_agent.wikipedia_loader import load_wikipedia_topics
 
 
@@ -39,10 +40,10 @@ def setup_knowledge_base(quick: bool = False) -> ChromaRetriever:
     return retriever
 
 
-def interactive_mode(agent: RAGAgent) -> None:
+def interactive_mode(agent: RAGAgent | ToolCallRAGAgent, mode: str = "behaviour") -> None:
     """Run the agent in interactive mode."""
     print("\n" + "=" * 60)
-    print("RAG Agent Interactive Mode")
+    print(f"RAG Agent Interactive Mode ({mode})")
     print("=" * 60)
     print("Ask questions about the knowledge base.")
     print("Type 'quit' or 'exit' to stop.\n")
@@ -66,28 +67,44 @@ def interactive_mode(agent: RAGAgent) -> None:
         try:
             result = agent.run(query)
 
-            print(f"\n{'─' * 40}")
-            print("Generated Plan:")
-            print(f"{'─' * 40}")
-            print(result.plan)
-            print(f"\n{'─' * 40}")
-            print("Answer:")
-            print(f"{'─' * 40}")
-            print(result.result)
-            print()
-
-            if result.metrics:
+            if mode == "tool-call":
+                print(f"\n{'─' * 40}")
+                print("Tool Calls:")
+                print(f"{'─' * 40}")
+                for tc in result.tool_calls:
+                    print(f"  - {tc.get('tool')}")
+                print(f"\n{'─' * 40}")
+                print("Answer:")
+                print(f"{'─' * 40}")
+                print(result.answer)
+                print()
                 print(
-                    f"[Tokens: {result.metrics.plan_tokens.total_tokens} | "
-                    f"Time: {result.metrics.total_time_seconds:.2f}s]"
+                    f"[LLM Calls: {result.metrics.llm_calls} | "
+                    f"Tokens: {result.metrics.total_tokens}]"
                 )
+            else:
+                print(f"\n{'─' * 40}")
+                print("Generated Plan:")
+                print(f"{'─' * 40}")
+                print(result.plan)
+                print(f"\n{'─' * 40}")
+                print("Answer:")
+                print(f"{'─' * 40}")
+                print(result.result)
+                print()
+
+                if result.metrics:
+                    print(
+                        f"[Tokens: {result.metrics.plan_tokens.total_tokens} | "
+                        f"Time: {result.metrics.total_time_seconds:.2f}s]"
+                    )
             print()
 
         except Exception as e:
             print(f"\nError: {e}\n")
 
 
-def demo_queries(agent: RAGAgent) -> None:
+def demo_queries(agent: RAGAgent | ToolCallRAGAgent, mode: str = "behaviour") -> None:
     """Run a set of demo queries showcasing different RAG strategies."""
     queries = [
         # Simple QA - should use retrieve -> extract
@@ -107,7 +124,7 @@ def demo_queries(agent: RAGAgent) -> None:
     ]
 
     print("\n" + "=" * 60)
-    print("RAG Agent Demo - Showcasing Different Strategies")
+    print(f"RAG Agent Demo ({mode}) - Showcasing Different Strategies")
     print("=" * 60)
 
     for query, description in queries:
@@ -119,22 +136,30 @@ def demo_queries(agent: RAGAgent) -> None:
         try:
             result = agent.run(query)
 
-            print("\nPlan (showing strategy selection):")
-            print(result.plan)
-            print("\nAnswer:")
-            print(result.result)
-
-            if result.metrics:
+            if mode == "tool-call":
+                print("\nTool calls:")
+                for tc in result.tool_calls:
+                    print(f"  - {tc.get('tool')}")
+                print("\nAnswer:")
+                print(result.answer)
                 print(
-                    f"\n[Tokens: {result.metrics.plan_tokens.total_tokens} | "
-                    f"Time: {result.metrics.total_time_seconds:.2f}s]"
+                    f"\n[LLM Calls: {result.metrics.llm_calls} | "
+                    f"Tokens: {result.metrics.total_tokens}]"
                 )
+            else:
+                print("\nPlan (showing strategy selection):")
+                print(result.plan)
+                print("\nAnswer:")
+                print(result.result)
+
+                if result.metrics:
+                    print(
+                        f"\n[Tokens: {result.metrics.plan_tokens.total_tokens} | "
+                        f"Time: {result.metrics.total_time_seconds:.2f}s]"
+                    )
 
         except Exception as e:
             print(f"\nError: {e}")
-
-        print()
-        input("Press Enter for next query...")
 
 
 def main() -> int:
@@ -191,6 +216,12 @@ Examples:
         action="store_true",
         help="Clear and reload the knowledge base",
     )
+    parser.add_argument(
+        "--mode",
+        choices=["behaviour", "tool-call"],
+        default="behaviour",
+        help="Agent mode: 'behaviour' (plan-execute) or 'tool-call' (agentic loop)",
+    )
     args = parser.parse_args()
 
     # Set up retriever
@@ -215,25 +246,37 @@ Examples:
     )
 
     print(f"\nUsing model: {args.provider}/{args.model}")
+    print(f"Agent mode: {args.mode}")
 
-    # Create agent
-    agent = RAGAgent(llm=config, retriever=retriever)
+    # Create agent based on mode
+    if args.mode == "tool-call":
+        agent = ToolCallRAGAgent(llm=config, retriever=retriever)
+    else:
+        agent = RAGAgent(llm=config, retriever=retriever)
 
     # Run mode
     if args.query:
         # Single query mode
         print(f"\nQuery: {args.query}")
         result = agent.run(args.query)
-        print(f"\nPlan:\n{result.plan}")
-        print(f"\nAnswer:\n{result.result}")
+
+        if args.mode == "tool-call":
+            print(f"\nTool calls: {[tc.get('tool') for tc in result.tool_calls]}")
+            print(f"\nAnswer:\n{result.answer}")
+            print(f"\n[LLM Calls: {result.metrics.llm_calls} | Tokens: {result.metrics.total_tokens}]")
+        else:
+            print(f"\nPlan:\n{result.plan}")
+            print(f"\nAnswer:\n{result.result}")
+            if result.metrics:
+                print(f"\n[Tokens: {result.metrics.plan_tokens.total_tokens}]")
         return 0
 
     elif args.demo:
-        demo_queries(agent)
+        demo_queries(agent, mode=args.mode)
         return 0
 
     else:
-        interactive_mode(agent)
+        interactive_mode(agent, mode=args.mode)
         return 0
 
 
