@@ -2,6 +2,8 @@
 
 This example demonstrates how to build an adaptive RAG (Retrieval-Augmented Generation) agent using OpenSymbolicAI's behavior-based decomposition pattern. It also includes an **illustration comparing behaviour programming vs tool-calling** to show why [LLM attention is precious](https://opensymbolicai.com/blog/llm-attention-is-precious).
 
+![RAG Agent Demo](assets/demo.gif)
+
 ## Key Concept
 
 The agent uses **decomposition behaviors** to teach the LLM different retrieval strategies. When you ask a question, the agent automatically selects the appropriate strategy based on query similarity to the examples.

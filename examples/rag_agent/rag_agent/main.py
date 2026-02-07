@@ -17,9 +17,14 @@ from rag_agent.tool_call_agent import ToolCallRAGAgent
 from rag_agent.wikipedia_loader import load_wikipedia_topics
 
 
-def setup_knowledge_base(quick: bool = False) -> ChromaRetriever:
+def setup_knowledge_base(quick: bool = False, reinit: bool = False) -> ChromaRetriever:
     """Set up the knowledge base with Wikipedia data."""
     retriever = ChromaRetriever()
+
+    if reinit:
+        print("Reinitializing knowledge base...")
+        retriever.clear()
+        retriever.clear_initialization()
 
     if retriever.count() == 0:
         print("Knowledge base is empty. Loading Wikipedia articles...")
@@ -34,8 +39,13 @@ def setup_knowledge_base(quick: bool = False) -> ChromaRetriever:
             topics = None  # Use default comprehensive list
 
         load_wikipedia_topics(topics=topics, retriever=retriever)
+        retriever.mark_initialized()
+        print("\nInitialization complete!")
     else:
-        print(f"Using existing knowledge base with {retriever.count()} documents")
+        doc_count = retriever.count()
+        print(f"Using existing knowledge base with {doc_count} documents")
+        print("(Use --reinit to reload the knowledge base)")
+        retriever.mark_initialized()
 
     return retriever
 
@@ -183,12 +193,15 @@ Examples:
 
   # Use a different model
   uv run python -m rag_agent.main --model llama3.2
+
+  # Reinitialize the knowledge base from scratch
+  uv run python -m rag_agent.main --reinit
         """,
     )
     parser.add_argument(
         "--model",
-        default="openai/gpt-oss-20b",
-        help="Model to use (default: openai/gpt-oss-20b)",
+        default="openai/gpt-oss-120b",
+        help="Model to use (default: openai/gpt-oss-120b)",
     )
     parser.add_argument(
         "--provider",
@@ -212,9 +225,9 @@ Examples:
         help="Quick setup with fewer Wikipedia articles",
     )
     parser.add_argument(
-        "--reload",
+        "--reinit",
         action="store_true",
-        help="Clear and reload the knowledge base",
+        help="Clear and reload the knowledge base from scratch",
     )
     parser.add_argument(
         "--mode",
@@ -224,14 +237,8 @@ Examples:
     )
     args = parser.parse_args()
 
-    # Set up retriever
-    retriever = ChromaRetriever()
-
-    if args.reload:
-        print("Clearing knowledge base...")
-        retriever.clear()
-
-    retriever = setup_knowledge_base(quick=args.quick)
+    # Set up retriever with knowledge base
+    retriever = setup_knowledge_base(quick=args.quick, reinit=args.reinit)
 
     # Set up LLM config
     provider_map = {

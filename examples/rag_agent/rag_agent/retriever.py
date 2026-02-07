@@ -1,11 +1,17 @@
 """Retriever abstraction for vector stores."""
 
-from pathlib import Path
-from typing import Any, Protocol
+from __future__ import annotations
 
-from sentence_transformers import SentenceTransformer
+import logging
+import os
+import warnings
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Protocol
 
 from rag_agent.models import Document
+
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
 
 
 class Retriever(Protocol):
@@ -34,20 +40,53 @@ class Retriever(Protocol):
         ...
 
 
+def _load_embedder_quiet(model_name: str) -> SentenceTransformer:
+    """Load SentenceTransformer with suppressed output."""
+    import contextlib
+    import io
+
+    from sentence_transformers import SentenceTransformer
+
+    # Suppress HF Hub warnings and model loading logs
+    os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+    # Suppress logging from transformers and sentence_transformers
+    logging.getLogger("sentence_transformers").setLevel(logging.ERROR)
+    logging.getLogger("transformers").setLevel(logging.ERROR)
+    logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
+
+    # Redirect stderr to suppress model loading progress
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore")
+        # Capture stderr to suppress progress bars and load reports
+        with contextlib.redirect_stderr(io.StringIO()):
+            return SentenceTransformer(model_name, device="cpu")
+
+
 class ChromaRetriever:
     """ChromaDB-based retriever with sentence transformer embeddings."""
+
+    INIT_MARKER = ".initialized"
 
     def __init__(
         self,
         collection_name: str = "knowledge_base",
         persist_directory: str | Path = "./chroma_db",
         embedding_model: str = "all-MiniLM-L6-v2",
+        quiet: bool | None = None,
     ):
         import chromadb
         from chromadb.config import Settings
 
         self.persist_directory = Path(persist_directory)
         self.persist_directory.mkdir(parents=True, exist_ok=True)
+
+        self._marker_path = self.persist_directory / self.INIT_MARKER
+
+        # Auto-detect quiet mode: quiet if already initialized
+        if quiet is None:
+            quiet = self.is_initialized()
 
         self.client = chromadb.PersistentClient(
             path=str(self.persist_directory),
@@ -59,7 +98,28 @@ class ChromaRetriever:
             metadata={"hnsw:space": "cosine"},
         )
 
-        self.embedder = SentenceTransformer(embedding_model)
+        # Load embedder with status messages
+        print("Loading embedding model...", end=" ", flush=True)
+        if quiet:
+            self.embedder = _load_embedder_quiet(embedding_model)
+        else:
+            from sentence_transformers import SentenceTransformer
+
+            self.embedder = SentenceTransformer(embedding_model)
+        print("done.")
+
+    def is_initialized(self) -> bool:
+        """Check if the retriever has been initialized before."""
+        return self._marker_path.exists()
+
+    def mark_initialized(self) -> None:
+        """Mark the retriever as initialized."""
+        self._marker_path.touch()
+
+    def clear_initialization(self) -> None:
+        """Clear the initialization marker."""
+        if self._marker_path.exists():
+            self._marker_path.unlink()
 
     def _embed(self, texts: list[str]) -> list[list[float]]:
         """Embed texts using the sentence transformer."""

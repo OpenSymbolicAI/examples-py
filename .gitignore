@@ -213,3 +213,6 @@ __marimo__/
 chroma_db/
 
 .claude/
+
+# macOS
+.DS_Store
