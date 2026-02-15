@@ -212,7 +212,13 @@ __marimo__/
 # Vector stores
 chroma_db/
 
+# Run logs
+logs/
+
 .claude/
+
+# Demo recordings
+*.mov
 
 # macOS
 .DS_Store
