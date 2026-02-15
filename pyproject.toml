@@ -20,7 +20,6 @@ Repository = "https://github.com/OpenSymbolicAI/examples-py"
 members = ["examples/*"]
 
 [tool.uv.sources]
-opensymbolicai-core = { git = "https://github.com/OpenSymbolicAI/core-py" }
 
 [dependency-groups]
 dev = [
