@@ -1423,15 +1423,15 @@ wheels = [
 
 [[package]]
 name = "opensymbolicai-core"
-version = "0.2.0"
+version = "0.4.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
     { name = "tqdm" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/21/64/63c0023e06ab792faeecf22fe54dea9a37da73b39f299d44159ae6e83207/opensymbolicai_core-0.2.0.tar.gz", hash = "sha256:aa5b767acb3560e91b225297a8f69eb01f5a3fb365ef04c96df3862094919dff", size = 57182, upload-time = "2026-02-15T20:23:33.302Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ff/18/ce33ab41dfaf50803513cacb852b44ed841c8bf2f7685ab7a3587e4b901f/opensymbolicai_core-0.4.0.tar.gz", hash = "sha256:61a7d695b8761f63a33938b5c5bd2cb2585cf23e28952be5d605f8ffcfbad514", size = 70379, upload-time = "2026-02-17T23:16:38Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d8/7a/d3990a6d96a4f92ac6d3f5d69f4ad1fc903721de5c78d7dd5fd470d978da/opensymbolicai_core-0.2.0-py3-none-any.whl", hash = "sha256:d96866e3bc55e700984f9e18ae0ad6bc266812f2ed87e0e7be8c4fe606b9509a", size = 40628, upload-time = "2026-02-15T20:23:32.406Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/9b/d0821c676abfb040f02266b753888e74b452bdb70f480867d4462b2a979f/opensymbolicai_core-0.4.0-py3-none-any.whl", hash = "sha256:ec6ede59c5c7d3190ac7f671e5a12cc0b5744150d479df8dcdc407adf387e666", size = 47772, upload-time = "2026-02-17T23:16:36.042Z" },
 ]
 
 [[package]]
