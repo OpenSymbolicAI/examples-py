@@ -1,0 +1,47 @@
+[project]
+name = "deep-research"
+version = "0.1.0"
+description = "Deep Research Agent using GoalSeeking pattern with Tavily web search"
+requires-python = ">=3.11,<3.14"
+license = { text = "MIT" }
+authors = [{ name = "OpenSymbolicAI" }]
+keywords = ["research", "deep-research", "goal-seeking", "agent", "llm", "tavily", "opensymbolicai"]
+
+dependencies = [
+    "opensymbolicai-core",
+    # Web search provider
+    "tavily-python>=0.3.0",
+    # Environment variables
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0",
+]
+
+[project.scripts]
+deep-research = "deep_research.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["deep_research"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
