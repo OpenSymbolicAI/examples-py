@@ -155,14 +155,14 @@ Examples:
     )
     parser.add_argument(
         "--model",
-        default="accounts/fireworks/models/gpt-oss-120b",
-        help="Model to use (default: accounts/fireworks/models/gpt-oss-120b)",
+        default="openai/gpt-oss-120b",
+        help="Model to use (default: openai/gpt-oss-120b)",
     )
     parser.add_argument(
         "--provider",
         choices=["ollama", "openai", "anthropic", "groq", "fireworks"],
-        default="fireworks",
-        help="LLM provider (default: fireworks)",
+        default="groq",
+        help="LLM provider (default: groq)",
     )
     parser.add_argument(
         "--query", "-q",

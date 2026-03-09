@@ -312,7 +312,7 @@ Answer:"""
             )
         )
 
-    def build_goal_prompt(self, goal: str, context: GoalContext) -> str:
+    def build_goal_prompt(self, goal: str, context: GoalContext, feedback: str | None = None) -> str:
         """Build prompt including accumulated evidence for the planner."""
         assert isinstance(context, MultiHopContext)
 
@@ -356,6 +356,10 @@ Answer:"""
                     f"\n### Current answer: {context.current_answer}\n"
                 )
 
+        feedback_section = ""
+        if feedback:
+            feedback_section = f"## Feedback from previous attempt\n{feedback}\n"
+
         examples_section = chr(10).join(
             f"### Example {i + 1}{chr(10)}{ex}"
             for i, ex in enumerate(examples)
@@ -382,6 +386,7 @@ You can ONLY call these methods:
 
 {examples_section}
 {knowledge_section}
+{feedback_section}
 ## Task
 
 Generate Python code for the NEXT step toward answering: {goal}
